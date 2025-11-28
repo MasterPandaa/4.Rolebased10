@@ -9,11 +9,11 @@
 #   P: pause
 #   Esc: quit
 
-import sys
-import random
 import math
+import random
+import sys
 from dataclasses import dataclass
-from typing import List, Tuple, Optional
+from typing import List, Optional, Tuple
 
 import pygame
 
@@ -33,9 +33,21 @@ FPS = 60
 # Gravity speeds by level (frames per cell move). Smaller is faster.
 # Alternatively could be seconds per cell; using frames keeps it in sync with FPS.
 LEVEL_SPEED_FRAMES = {
-    1: 48, 2: 43, 3: 38, 4: 33, 5: 28,
-    6: 23, 7: 18, 8: 13, 9: 8,
-    10: 6, 11: 5, 12: 5, 13: 4, 14: 4, 15: 4,
+    1: 48,
+    2: 43,
+    3: 38,
+    4: 33,
+    5: 28,
+    6: 23,
+    7: 18,
+    8: 13,
+    9: 8,
+    10: 6,
+    11: 5,
+    12: 5,
+    13: 4,
+    14: 4,
+    15: 4,
 }
 
 # Colors
@@ -46,56 +58,56 @@ LIGHT_GRAY = (120, 120, 120)
 
 # Tetromino colors (approx Tetris guideline)
 COLORS = {
-    'I': (0, 240, 240),
-    'J': (0, 0, 240),
-    'L': (240, 160, 0),
-    'O': (240, 240, 0),
-    'S': (0, 240, 0),
-    'T': (160, 0, 240),
-    'Z': (240, 0, 0),
+    "I": (0, 240, 240),
+    "J": (0, 0, 240),
+    "L": (240, 160, 0),
+    "O": (240, 240, 0),
+    "S": (0, 240, 0),
+    "T": (160, 0, 240),
+    "Z": (240, 0, 0),
 }
 
 # Tetromino rotation states using 4x4 matrices (list of coords per rotation)
 # Each rotation is a list of (x,y) block offsets for that piece rotation.
 # Origin at top-left of the 4x4 box; piece x,y refers to this 4x4 box position.
 TETROMINO_SHAPES = {
-    'I': [
+    "I": [
         [(0, 1), (1, 1), (2, 1), (3, 1)],  # 0
         [(2, 0), (2, 1), (2, 2), (2, 3)],  # 90
         [(0, 2), (1, 2), (2, 2), (3, 2)],  # 180
         [(1, 0), (1, 1), (1, 2), (1, 3)],  # 270
     ],
-    'J': [
+    "J": [
         [(0, 0), (0, 1), (1, 1), (2, 1)],
         [(1, 0), (2, 0), (1, 1), (1, 2)],
         [(0, 1), (1, 1), (2, 1), (2, 2)],
         [(1, 0), (1, 1), (0, 2), (1, 2)],
     ],
-    'L': [
+    "L": [
         [(2, 0), (0, 1), (1, 1), (2, 1)],
         [(1, 0), (1, 1), (1, 2), (2, 2)],
         [(0, 1), (1, 1), (2, 1), (0, 2)],
         [(0, 0), (1, 0), (1, 1), (1, 2)],
     ],
-    'O': [
+    "O": [
         [(1, 0), (2, 0), (1, 1), (2, 1)],
         [(1, 0), (2, 0), (1, 1), (2, 1)],
         [(1, 0), (2, 0), (1, 1), (2, 1)],
         [(1, 0), (2, 0), (1, 1), (2, 1)],
     ],
-    'S': [
+    "S": [
         [(1, 0), (2, 0), (0, 1), (1, 1)],
         [(1, 0), (1, 1), (2, 1), (2, 2)],
         [(1, 1), (2, 1), (0, 2), (1, 2)],
         [(0, 0), (0, 1), (1, 1), (1, 2)],
     ],
-    'T': [
+    "T": [
         [(1, 0), (0, 1), (1, 1), (2, 1)],
         [(1, 0), (1, 1), (2, 1), (1, 2)],
         [(0, 1), (1, 1), (2, 1), (1, 2)],
         [(1, 0), (0, 1), (1, 1), (1, 2)],
     ],
-    'Z': [
+    "Z": [
         [(0, 0), (1, 0), (1, 1), (2, 1)],
         [(2, 0), (1, 1), (2, 1), (1, 2)],
         [(0, 1), (1, 1), (1, 2), (2, 2)],
@@ -105,9 +117,7 @@ TETROMINO_SHAPES = {
 
 # Basic wall kick tests: try these offsets in order when rotating
 # This is a simplified wall-kick set (not full SRS but works well)
-WALL_KICKS = [
-    (0, 0), (1, 0), (-1, 0), (2, 0), (-2, 0), (0, -1), (0, 1)
-]
+WALL_KICKS = [(0, 0), (1, 0), (-1, 0), (2, 0), (-2, 0), (0, -1), (0, 1)]
 
 
 @dataclass
@@ -122,10 +132,10 @@ class Piece:
     def cells(self) -> List[Tuple[int, int]]:
         return TETROMINO_SHAPES[self.kind][self.rotation]
 
-    def rotated(self, dr: int) -> 'Piece':
+    def rotated(self, dr: int) -> "Piece":
         return Piece(self.kind, (self.rotation + dr) % 4, self.x, self.y, self.color)
 
-    def moved(self, dx: int, dy: int) -> 'Piece':
+    def moved(self, dx: int, dy: int) -> "Piece":
         return Piece(self.kind, self.rotation, self.x + dx, self.y + dy, self.color)
 
     def get_world_cells(self) -> List[Tuple[int, int]]:
@@ -133,7 +143,12 @@ class Piece:
 
 
 class Board:
-    def __init__(self, width: int = BOARD_WIDTH, height: int = BOARD_HEIGHT, hidden_rows: int = HIDDEN_ROWS):
+    def __init__(
+        self,
+        width: int = BOARD_WIDTH,
+        height: int = BOARD_HEIGHT,
+        hidden_rows: int = HIDDEN_ROWS,
+    ):
         self.width = width
         self.height = height
         self.hidden_rows = hidden_rows
@@ -150,7 +165,7 @@ class Board:
         return 0 <= x < self.width and 0 <= y < self.height
 
     def collides(self, piece: Piece) -> bool:
-        for (wx, wy) in piece.get_world_cells():
+        for wx, wy in piece.get_world_cells():
             if wx < 0 or wx >= self.width:
                 return True
             if wy >= self.height:
@@ -161,7 +176,7 @@ class Board:
 
     # ------------- Locking & clearing -------------
     def lock_piece(self, piece: Piece) -> None:
-        for (wx, wy) in piece.get_world_cells():
+        for wx, wy in piece.get_world_cells():
             if 0 <= wy < self.height:
                 self.grid[wy][wx] = piece.color
         cleared = self.clear_lines()
@@ -301,8 +316,14 @@ class Game:
 
     def _try_rotate(self, dr: int) -> bool:
         rotated = self.current.rotated(dr)
-        for (ox, oy) in WALL_KICKS:
-            candidate = Piece(rotated.kind, rotated.rotation, rotated.x + ox, rotated.y + oy, rotated.color)
+        for ox, oy in WALL_KICKS:
+            candidate = Piece(
+                rotated.kind,
+                rotated.rotation,
+                rotated.x + ox,
+                rotated.y + oy,
+                rotated.color,
+            )
             if not self.board.collides(candidate):
                 self.current = candidate
                 return True
@@ -372,8 +393,15 @@ class Game:
         sx = px + pw + 20
         sy = py
         self._draw_text(self.font_big, f"Score: {self.board.score}", (sx, sy), WHITE)
-        self._draw_text(self.font_big, f"Level: {self.board.level}", (sx, sy + 36), WHITE)
-        self._draw_text(self.font_big, f"Lines: {self.board.lines_cleared_total}", (sx, sy + 72), WHITE)
+        self._draw_text(
+            self.font_big, f"Level: {self.board.level}", (sx, sy + 36), WHITE
+        )
+        self._draw_text(
+            self.font_big,
+            f"Lines: {self.board.lines_cleared_total}",
+            (sx, sy + 72),
+            WHITE,
+        )
 
         self._draw_text(self.font_big, "Next:", (sx, sy + 120), WHITE)
         self._draw_next_queue(sx, sy + 160)
@@ -388,7 +416,7 @@ class Game:
     def _draw_piece_filled(self, piece: Piece):
         px = BORDER
         py = BORDER
-        for (wx, wy) in piece.get_world_cells():
+        for wx, wy in piece.get_world_cells():
             if wy < 0:
                 continue
             rect = (px + wx * CELL_SIZE, py + wy * CELL_SIZE, CELL_SIZE, CELL_SIZE)
@@ -398,13 +426,19 @@ class Game:
     def _draw_piece_outline(self, piece: Piece, color: Tuple[int, int, int]):
         px = BORDER
         py = BORDER
-        for (wx, wy) in piece.get_world_cells():
+        for wx, wy in piece.get_world_cells():
             if wy < 0:
                 continue
             rect = (px + wx * CELL_SIZE, py + wy * CELL_SIZE, CELL_SIZE, CELL_SIZE)
             pygame.draw.rect(self.screen, color, rect, 2)
 
-    def _draw_text(self, font: pygame.font.Font, text: str, pos: Tuple[int, int], color: Tuple[int, int, int]):
+    def _draw_text(
+        self,
+        font: pygame.font.Font,
+        text: str,
+        pos: Tuple[int, int],
+        color: Tuple[int, int, int],
+    ):
         surf = font.render(text, True, color)
         self.screen.blit(surf, pos)
 
@@ -412,7 +446,9 @@ class Game:
         surf = self.font_big.render(text, True, WHITE)
         rect = surf.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2))
         shadow = self.font_big.render(text, True, (0, 0, 0))
-        shadow_rect = shadow.get_rect(center=(WINDOW_WIDTH // 2 + 2, WINDOW_HEIGHT // 2 + 2))
+        shadow_rect = shadow.get_rect(
+            center=(WINDOW_WIDTH // 2 + 2, WINDOW_HEIGHT // 2 + 2)
+        )
         self.screen.blit(shadow, shadow_rect)
         self.screen.blit(surf, rect)
 
@@ -437,7 +473,7 @@ class Game:
             cell = 16
             offset_x = bx + (box_size - w * cell) // 2
             offset_y = by + (box_size - h * cell) // 2
-            for (cx, cy) in cells:
+            for cx, cy in cells:
                 rx = offset_x + (cx - minx) * cell
                 ry = offset_y + (cy - miny) * cell
                 pygame.draw.rect(self.screen, color, (rx, ry, cell, cell))
